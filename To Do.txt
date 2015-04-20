@@ -1,4 +1,5 @@
 3. Network Graphs(Feas and OptPol)
-4. Link Function Pages
 5. Improve Structures
-6. Error Checking
+7. Description of Model
+9. Condition Display (ie choose if to display or not)
+10. Methods for Intergers instead of Float

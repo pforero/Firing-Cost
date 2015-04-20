@@ -6,6 +6,7 @@ export Wages, Production, FiringCost, Demand, LabourPortfolio
 export Shave!, fPort, ePort, eFeas, fFeas
 export FeasibleChoices, FeasibleQnR, QnRTransition
 export Profits, VFI
+export ErrorCheck
 
 function Wages(G::Int,Beta::Float64,Alpha::Float64)
     
@@ -641,6 +642,61 @@ function VFI(β::Float64,P::Array{Array{Float64,2},1},D::Array{Float64,2},Q::Spa
     end
     
     return V, G
+    
+end
+
+function ErrorCheck(x;β=0.9,N=3,G=3,α₁=0.0,β₁=0.0,Ĝ=2,ϕ=0.0,S=true,δ=0.5,γ=0.5,M_D=10.0,m_D=5.0,ρ=0.0,N_D=2,d=3.0)
+    
+    """Create the Wage Structure of an Economy.
+
+    Parameters
+    ----------
+    β  : Firm's intertemporal discount rate
+    G  : Number of different heterogenous tenure workes  
+    N  : Max Number of Workers hired during one period
+    α₁ : Entry level wage  
+    β₁ : Period Wage Increase with tenure 
+    Ĝ  : Tenure for Peaked Production
+    ϕ  : Percentage of Wage Paid as Firing Cost 
+    S  : Boolean for Tenure increase in Firing Cost
+    δ  : Probability of a worker Quiting in the last tenure group  
+    γ  : Probability of a worker Retiring in all but the last tenure group  
+    M_D: Maximum Demand Shock 
+    m_D: Minimum Demand Shock 
+    ρ  : Autocorrelation of Demand Shock  
+    N_D: Number of Demand Shocks  
+    d  : Standard Deviation from the Mean to the Max/Min 
+    
+    Parameters
+    ----------
+    Error : Error Message
+    """
+    
+    0<β<1           || error("\u03B2 \u2209 (0,1)");                              # Check if β is between 0 and 1
+    
+    isa(N,Int)      || error("N is not and Interger");                            # Check if N is an Interger
+    isa(G,Int)      || error("G is not and Interger");                            # Check if G is an Interger
+    N>0             || error("N \u226F 0");                                       # Check if N is greater than zero  
+    G>0             || error("G \u226F 0");                                       # Check if G is greater than zero
+    
+    α₁>=0           || error("Starting Wage is Negative");                        # Check if Wages are negative
+    α₁+(β₁*(G-1))>=0|| error("Slope of Wage Function creates Negative Wages");    # Check if Wages are negative
+    
+    isa(Ĝ,Int)      || error("G\u0302 is not an Interger");                       # Check if Ĝ is an Interger
+    1<Ĝ<G           || error("G\u0302 \u2209 (0,G)");                             # Check if Ĝ is a Valid Tenure Year
+    
+    ϕ>=0            || error("Firing Cost must not be negative");                 # Check if ϕ>0
+    isa(S,Bool)     || error("Seniority (S) is not Boolean");                     # Check S is Boolean
+    
+    0<=δ<=1         || error("\u03B4 \u2209 [0,1]");                              # Check if δ is between 0 and 1
+    0<=γ<=1         || error("\u03B3 \u2209 [0,1]");                              # Check if γ is between 0 and 1
+    
+    -1<ρ<1          || error("\u03C1 \u2209 (-1,1) No Unit Root Allowed");        # Check if ρ has a Unit Root
+    M_D>m_D         || error("Maximum Demand is not larger than Minimum Demand"); # Check of M_D>m_D
+    m_D>0           || error("Minimum Demand must be Positive");                  # Check of M_D>m_D
+    N_D>1           || error("Number of Demand Shocks must be larger than 1");    # Check if N_D>1
+    isa(N_D,Int)    || error("Number of Demand Grid is not an Interger");         # Check N_D is Interger
+    d>0             || error("Standard Deviation of Max is not Positive");        # Check if d>0
     
 end
 

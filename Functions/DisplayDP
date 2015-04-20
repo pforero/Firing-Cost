@@ -482,4 +482,121 @@ function Value(V::Array{Float64,2},D::Array{Float64,1};colour=["white","gray","b
     
 end
 
+###############################################################
+##################### My Colour ###############################
+###############################################################
+
+function MyColour(C::Array{ASCIIString,1})
+    
+    """Method 1: List of String Colours
+    
+    Create Colour Structure.
+
+    Parameters
+    ----------
+    C: Array with 3 String Colours
+    
+    Output
+    ----------
+    C: Array with 3 Colours
+    """
+    
+    length(C)<3 && return C=vcat(color("white"),color("gray"),color("black"));
+    
+    return C
+    
+end
+
+function MyColour(C1::ASCIIString,C2::ASCIIString,C3::ASCIIString)
+    
+    """Method 2: Three String Colours
+    
+    Create Colour Structure.
+
+    Parameters
+    ----------
+    C1: String Colour 1
+    C2: String Colour 2
+    C3: String Colour 3
+    
+    Output
+    ----------
+    C: Array with 3 Colours
+    """
+    
+    return vcat(color(C1),color(C2),color(C3))
+    
+end
+
+function MyColour{T<:ColorValue}(C::Array{T,1})
+    
+    """Method 3: List of Colours
+    
+    Create Colour Structure.
+
+    Parameters
+    ----------
+    C: Array of Colour
+    
+    Output
+    ----------
+    C: Array with 3 Colours
+    """
+    
+    length(C)<3 && return C=vcat(color("white"),color("gray"),color("black"));
+    
+    return C
+    
+end
+
+function MyColour(C1::ColorValue,C2::ColorValue,C3::ColorValue)
+    
+    """Method 4: Three Colours
+    
+    Create Colour Structure.
+
+    Parameters
+    ----------
+    C1: Colour 1
+    C2: Colour 2
+    C3: Colour 3
+    
+    Output
+    ----------
+    C: Array with 3 Colours
+    """
+    
+    return vcat(C1,C2,C3)
+    
+end
+
+function MyColour(Name::ASCIIString)
+    
+    """Method 5: Predetermined Colours
+    
+    Create Colour Structure.
+
+    Parameters
+    ----------
+    Name: Name of Predetermined Colours
+    
+    Output
+    ----------
+    C: Array with 3 Colours
+    """
+    
+    C=vcat(color("white"),color("gray"),color("black"));
+    
+    if Name=="EUI"
+        
+        Colour1=RGB(202/255,215/255,237/255);
+        Colour2=RGB(37/255,131/255,192/255);
+        Colour3=RGB(0/255,74/255,124/255);
+        
+    end
+    
+    return vcat(Colour1,Colour2,Colour3) 
+    
+end
+
 end
