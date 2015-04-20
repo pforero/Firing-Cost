@@ -1,0 +1,485 @@
+module DisplayDP
+
+using Gadfly
+using Color
+using Interact
+
+export Wages, Production, FiringCost
+export FuncText, LabourPortfolio, Shave
+export Demand, StationaryDemand, QnR
+export Profits, Value
+
+function Wages(W::Array{Float64,1};colour=["white","gray","black"])
+    
+    """Create a Bar Graph to display 
+    the Wage Structure
+
+    Parameters
+    ----------
+    W  : Wage Structure
+    colour: Array with Colours used in Bar Graph
+    
+    
+    Output
+    ----------
+    Bar: Bar Graph with Wage Structure
+
+    """
+    
+    G=length(W);
+    
+    Bar=plot(x=[0:G-1]+1/2,y=W,
+    color=[0:G-1]+1/2,
+    Scale.ContinuousColorScale(Scale.lab_gradient(color(colour[1]),color(colour[2]),color(colour[3]))),
+    Guide.ylabel("Wage"),
+    Guide.xlabel("Tenure"),
+    Guide.title("Wage Structure"),
+    Guide.colorkey(" "),
+    Guide.xticks(ticks=[0:G]),
+    Guide.yticks(ticks=[0:0.25:maximum(W)]),
+    Geom.bar(position=:dodge))
+    
+    return Bar
+    
+end
+
+function Production(F::Array{Float64,1};colour=["white","gray","black"])
+    
+    """Create a Bar Graph to display 
+    the Production Structure
+
+    Parameters
+    ----------
+    F  : Production Structure
+    colour: Array with Colours used in Bar Graph
+    
+    
+    Output
+    ----------
+    Bar: Bar Graph with Production Structure
+
+    """
+    
+    G=length(F);
+    
+    Bar=plot(x=[0:G-1]+1/2,y=F,
+    color=[0:G-1]+1/2,
+    Scale.ContinuousColorScale(Scale.lab_gradient(color(colour[1]),color(colour[2]),color(colour[3]))),
+    Guide.ylabel("Production"),
+    Guide.xlabel("Tenure"),
+    Guide.title("Production Structure"),
+    Guide.colorkey(" "),
+    Guide.xticks(ticks=[0:G]),
+    Guide.yticks(ticks=[0:0.25:maximum(F)]),
+    Geom.bar(position=:dodge))
+    
+    return Bar
+    
+end
+
+function FiringCost(FC::Array{Float64,1};colour=["white","gray","black"])
+    
+    """Create a Bar Graph to display 
+    the Production Structure
+
+    Parameters
+    ----------
+    FC : Firing Cost Structure
+    colour: Array with Colours used in Bar Graph
+    
+    
+    Output
+    ----------
+    Bar: Bar Graph with Firing Cost Structure
+
+    """
+    
+    G=length(FC);
+    
+    Bar=plot(x=[0:G-1]+1/2,y=FC,
+    color=[0:G-1]+1/2,
+    Scale.ContinuousColorScale(Scale.lab_gradient(color(colour[1]),color(colour[2]),color(colour[3]))),
+    Guide.ylabel("Firing Cost"),
+    Guide.xlabel("Tenure"),
+    Guide.title("Firing Cost Structure"),
+    Guide.colorkey(" "),
+    Guide.xticks(ticks=[0:G]),
+    Guide.yticks(ticks=[0:0.1:maximum(FC)]),
+    Geom.bar(position=:dodge))
+    
+    return Bar
+    
+end
+
+function FuncText(f::Expr,G::Int)
+    
+    """Create a Text to display mathematically
+    the function created by fFeas or fPort
+
+    Parameters
+    ----------
+    f   : Function to Display
+    G   : Number of Variables in the Function
+    
+    Output
+    ----------
+    Text: String used to Display Function
+
+    """
+    
+    Text="[[";
+
+    for i=1:G-1
+    
+        Param=f.args[1].args[i];
+        Text=string(Text,Param,",");
+    
+    end
+
+    Param=f.args[1].args[G];
+    Text=string(Text,Param,"]~for~");
+
+    for i=1:G-1
+    
+        Param=f.args[i+1].args[1];
+        ParamN=f.args[i+1].args[2].args[2];
+        Text=string(Text,Param,"=0:",ParamN,",~");
+    
+    end
+
+    Param=f.args[G+1].args[1];
+    ParamN=f.args[G+1].args[2].args[2];
+    Text=string(Text,Param,"=0:",ParamN,"]");
+    
+    return Text
+    
+end
+
+function LabourPortfolio(L::Array{Any,1};colour=["white","gray","black"])
+    
+    """Create a Rectbin Graph to display 
+    number of workers in each tenure group 
+    for all Labour Portfolios
+
+    Parameters
+    ----------
+    L : Labour Portfolios
+    colour: Array with Colours used in Rectbin Graph
+    
+    
+    Output
+    ----------
+    Rect: Rectbin Graph with Labour Portfolios
+
+    """
+    
+    G=length(L[1]);
+    L=collect(L);
+    S_L=length(L);
+
+    x=repeat([1:S_L],inner=[G])
+    y=repeat([0:G-1],outer=[S_L])
+
+    Rect=plot(x=x, y=y, color=[L...],
+    Scale.ContinuousColorScale(Scale.lab_gradient(color(colour[1]),color(colour[2]),color(colour[3]))),
+    Guide.ylabel("Tenure"),
+    Guide.xlabel("Portfolio"),
+    Guide.title("Number of Workers"),
+    Guide.yticks(ticks=[0:1:G-1]),
+    Guide.xticks(ticks=[0:50:S_L]),
+    Geom.rectbin)
+    
+    return Rect
+    
+end
+
+function Shave(L₀::Int,L₁::Int;colour=["white","gray","black"])
+    
+    """RECTBIN METHOD:
+    
+    Create a Rectbin Graph to display 
+    the reduction of the number of 
+    Labour Portfolios in a Shave
+
+    Parameters
+    ----------
+    L₀ : Number of Labour Portfolios Before Shave
+    L₁ : Number of Labour Portfolios After Shave
+    colour: Array with Colours used in Rectbin Graph
+    
+    Output
+    ----------
+    Rect: Rectbin Graph with Labour Portfolios
+
+    """
+    
+    scale=gcd(L₀,L₁);
+    oldS=div(L₀,scale);
+    newS=div(L₁,scale);
+
+    x = repeat([0:oldS-1], inner=[oldS]);
+    y = repeat([0:oldS-1], outer=[oldS]);
+
+    col=max(max(x,y),newS)-newS;
+
+    Rect=plot(x=x,y=y,color=col, 
+    Scale.ContinuousColorScale(Scale.lab_gradient(color(colour[1]),color(colour[2]),color(colour[3]))),
+    Guide.ylabel("Tenure"),
+    Guide.xlabel("Portfolio"),
+    Guide.title("Reduction of Labour State Space"),
+    Guide.colorkey("Old to New"),
+    Guide.xticks(ticks=[0:scale:oldS]),
+    Guide.yticks(ticks=[0:scale:oldS]),
+    Scale.x_continuous(labels=x-> @sprintf("%0d", x*scale)),
+    Scale.y_continuous(labels=y-> @sprintf("%0d", y*scale)),
+    Geom.rectbin)
+    
+    return Rect
+    
+end
+
+function Shave(L₀::Array{Any,1},L₁::Array{Any,1},F;colour=["white","gray","black"])
+    
+    """HISTOGRAM METHOD:
+    
+    Create a Histobram Graph to display 
+    the Production level of the Labour Portfolios 
+    before and after the Shave
+
+    Parameters
+    ----------
+    L₀ : Labour Portfolios Before Shave
+    L₁ : Labour Portfolios After Shave
+    colour: Array with Colours used in Rectbin Graph
+    
+    Output
+    ----------
+    Hist: Histogram Graph with Production of both Labour Portfolios
+
+    """
+    
+    FL=reshape([L₀...],length(L₀[1]),length(L₀))'*F;
+    NFL=reshape([L₁...],length(L₁[1]),length(L₁))'*F;
+    
+    bin2=ceil(50/(maximum(FL)/maximum(NFL)));
+
+    Hist=plot(layer(x=FL,
+    Theme(default_color=color(colour[1])),
+    Geom.histogram(bincount=50,density=true)),
+    layer(x=NFL,
+    Theme(default_color=color(colour[2])),
+    Geom.histogram(bincount=bin2,density=true)),
+    Guide.ylabel("Density"),
+    Guide.xlabel("Production"),
+    Guide.title("Production of Portfolios"),
+    Guide.manual_color_key("Labour Portfolio",
+    ["New Portfolio", "Old Portfolio"],
+    [color(colour[2]), color(colour[1])]))
+    
+    return Hist
+    
+end
+
+function Demand(D::Array{Float64,1},Π=Array{Float64,2};colour=["white","gray","black"])
+    
+    """Create a Rectbin Graph to the 
+    probability of changes in Demand
+
+    Parameters
+    ----------
+    D : Demand Shocks
+    Π : Transition Matrix
+    colour: Array with Colours used in Rectbin Graph
+    
+    Output
+    ----------
+    Rect: Rectbin Graph with Transition Matrix
+
+    """
+    
+    N=length(D);
+
+    x=repeat(D,inner=[N])
+    y=repeat(D,outer=[N])
+
+    Rect=plot(x=x, y=y, color=Π[:],
+    Scale.ContinuousColorScale(Scale.lab_gradient(color(colour[1]),color(colour[2]),color(colour[3]))),
+    Guide.ylabel("D Today"),
+    Guide.xlabel("D Tomorrow"),
+    Guide.title("Markov Matrix"),
+    Guide.xticks(ticks=D),
+    Guide.yticks(ticks=D),
+    Geom.rectbin)
+    
+    return Rect
+    
+end
+
+function StationaryDemand(D::Array{Float64,1},Π=Array{Float64,2};colour=["white","gray","black"])
+    
+    """Create a Line Graph with the 
+    Stationary Distribution of Demand
+
+    Parameters
+    ----------
+    D : Demand Shocks
+    Π : Transition Matrix
+    colour: Array with Colours used in Rectbin Graph
+    
+    Output
+    ----------
+    Line: Line Graph with Stationary Distribution
+
+    """
+    
+    p=fill(1/length(D),length(D));
+
+    test=1;
+
+    while test>=eps(Float32)
+    
+        p1=Π'*p;
+    
+        test=norm(p1-p);
+    
+        p=p1;
+    
+    end
+
+    Line=plot(x=D, y=p,
+    Theme(panel_fill=color(colour[1]),panel_opacity=0.5,
+    panel_stroke=color("white"),default_color=color(colour[3])),
+    Guide.ylabel("Probability Density Function"),
+    Guide.xlabel("Demand"),
+    Guide.title("PDF of Demand"),
+    Geom.smooth(method=:loess,smoothing=0.4))
+    
+    return Line
+    
+end
+
+function QnR(Π::SparseMatrixCSC{Float64,Int64};colour=["white","gray","black"])
+    
+    """Create a Rectbin Graph to 
+    display the Transition Matrix 
+    due to Quit and Retirement
+
+    Parameters
+    ----------
+    Π : Quit and Retirement Transition Matrix
+    colour: Array with Colours used in Rectbin Graph
+    
+    Output
+    ----------
+    Rect: Rectbin Graph with Transition Matrix
+
+    """
+    
+    L=size(Π,1);
+    
+    Li=[1:L];
+
+    Lt=[0:10:L-1];
+
+    x=repeat(Li,inner=[L])
+    y=repeat(Li,outer=[L])
+
+    Rect=plot(x=x, y=y, color=Π[:],
+    Scale.ContinuousColorScale(Scale.lab_gradient(color(colour[1]),color(colour[2]),color(colour[3]))),
+    Guide.ylabel("L Today"),
+    Guide.xlabel("L Tomorrow"),
+    Guide.title("Transition Matrix"),
+    Guide.colorkey("Probability"),
+    Guide.xticks(ticks=Lt),
+    Guide.yticks(ticks=Lt),
+    Geom.rectbin)
+    
+    return Rect
+    
+end
+
+function Profits(P::Array{Array{Float64,2},1},F::(Array{Array{Int64,1},1},Array{Array{Int64,1},1}),D::Array{Float64,1};colour=["white","gray","black"])
+    
+    """Create an Interactive Widget 
+    of Rectbin Graphs showing the Profits 
+    for every change of State
+
+    Parameters
+    ----------
+    P : Matrix with Profits
+    F : Index of Feasible Changes in Labour State
+    D : Demand Shocks
+    colour: Array with Colours used in Rectbin Graph
+    
+    Output
+    ----------
+    Widg: Interactive Widget with a Rectbin Graph for each Demand with Profits for each change in State
+
+    """
+    
+    y=[F[1]...];
+    x=[F[2]...];
+
+    Prof=Array(Float64,length(D),length(x));
+
+    for i=1:length(x), j=1:length(D)
+        
+        Prof[j,i]=P[y[i]][j,sum(y[1:i].==y[i])];
+    
+    end
+    
+    @manipulate for d=1:length(D) 
+
+        plot(x=x, y=y, color=collect(Prof[d,:]),
+        Scale.ContinuousColorScale(Scale.lab_gradient(color(colour[1]),color(colour[2]),color(colour[3])),
+        minvalue=floor(minimum(Prof)), maxvalue=ceil(maximum(Prof))),
+        Guide.ylabel("L Today"),
+        Guide.xlabel("L Tomorrow"),
+        Guide.title("Profit for Demand = $(D[d])"),
+        Guide.colorkey("Profit"),
+        Guide.xticks(ticks=[0:25:size(P,1)]),
+        Guide.yticks(ticks=[0:25:size(P,1)]),
+        Geom.rectbin)
+        
+    end
+    
+end
+
+function Value(V::Array{Float64,2},D::Array{Float64,1};colour=["white","gray","black"])
+    
+    """Create a Rectbin with all 
+    States and their Value
+
+    Parameters
+    ----------
+    V : Matrix with Value Function
+    D : Demand Shocks
+    colour: Array with Colours used in Rectbin Graph
+    
+    Output
+    ----------
+    Rect: Rectbin graph with Value of each State
+
+    """
+    
+    Ds=size(V,1)    
+    L=size(V,2)
+    
+    x=repeat([1:L],inner=[Ds]);
+    y=repeat(D,outer=[L]);
+    
+    Rect=plot(x=x, y=y, color=collect(V),
+    Scale.ContinuousColorScale(Scale.lab_gradient(color(colour[1]),color(colour[2]),color(colour[3]))),
+    Guide.ylabel("Demand"),
+    Guide.xlabel("Labour"),
+    Guide.title("Value Function"),
+    Guide.colorkey("Value"),
+    Guide.xticks(ticks=[0:25:L]),
+    Guide.yticks(ticks=D),
+    Geom.rectbin)
+    
+    return Rect
+    
+end
+
+end
