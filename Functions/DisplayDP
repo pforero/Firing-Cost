@@ -4,6 +4,7 @@ using Gadfly
 using Color
 using Interact
 
+export MyColour
 export Wages, Production, FiringCost
 export FuncText, LabourPortfolio, Shave
 export Demand, StationaryDemand, QnR
@@ -595,7 +596,7 @@ function MyColour(Name::ASCIIString)
         
     end
     
-    return vcat(Colour1,Colour2,Colour3) 
+    return vcat(Colour1,Colour2,Colour3)
     
 end
 

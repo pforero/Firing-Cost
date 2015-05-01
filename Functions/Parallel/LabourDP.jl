@@ -6,6 +6,7 @@ export Wages, Production, FiringCost, Demand, LabourPortfolio
 export Shave!, fPort, ePort, eFeas, fFeas
 export FeasibleChoices, FeasibleQnR, QnRTransition
 export Profits, VFI
+export ErrorCheck
 
 function Wages(G::Int,Beta::Float64,Alpha::Float64)
     
@@ -25,6 +26,31 @@ function Wages(G::Int,Beta::Float64,Alpha::Float64)
     TGrid=[0:G-1];
     
     W=TGrid*Beta+Alpha;
+    
+    return W
+    
+end
+
+function Wages(G::Int,Beta::Number,Alpha::Number)
+    
+    """METHOD: NON FLOAT
+    Create the Wage Structure of an Economy.
+
+    Parameters
+    ----------
+    G    : Max Number of Tenure Workers
+    Beta : Increase of wage each period of tenure 
+    Alpha: Starting wage
+    
+    Parameters
+    ----------
+    W : Grid with the Wage of workers for each tenure
+    """
+    
+    Beta=float(Beta);
+    Alpha=float(Alpha);
+    
+    W=Wages(G,Beta,Alpha);
     
     return W
     
@@ -67,6 +93,36 @@ function Production(G::Int,F0::Float64,FG::Float64,FK::Float64,GK::Int)
     
 end
 
+function Production(G::Int,F0::Number,FG::Number,FK::Number,GK::Int)
+    
+    """METHOD: NON FLOAT
+    Create the Wage Structure of an Economy.
+    It fits a second order polynomial for the three parameter values
+    and extrapolates for the rest of the tenure values.
+
+    Parameters
+    ----------
+    G : Max Number of Tenure Workers
+    F0: Starting Production 
+    FG: Last Tenure Production
+    FK: Peak Production
+    GK: Tenure of Peak Production
+    
+    Output
+    ----------
+    F : Grid with Production of each Tenure worker
+    """
+    
+    F0=float(F0);
+    FG=float(FG);
+    FK=float(FK);
+    
+    F=Production(G,F0,FG,FK,GK);
+    
+    return F
+    
+end
+
 function FiringCost(G::Int,ϕ::Float64,S::Bool,W::Array{Float64,1})
     
     """Create a grid with the adjustment costs 
@@ -88,6 +144,33 @@ function FiringCost(G::Int,ϕ::Float64,S::Bool,W::Array{Float64,1})
     TGrid=[-1:G-2]*S+1;
     
     FC=TGrid.*(ϕ*W);
+    
+    return FC
+    
+end
+
+function FiringCost(G::Int,ϕ::Number,S::Bool,W::Array{Float64,1})
+    
+    """METHOD: NON FLOAT
+    Create a grid with the adjustment costs 
+    paid by the firm for firing a worker for 
+    each level of tenure.
+
+    Parameters
+    ----------
+    G: Max Number of Tenure Workers
+    ϕ: Firing Cost as Share of Wage 
+    S: Seniority Dummy
+    W: Wage Structure
+    
+    Output
+    ----------
+    FC: Grid with the Firing Cost of each Tenure Worker
+    """
+    
+    ϕ=float(ϕ);
+    
+    FC=FiringCost(G,ϕ,S,W);
     
     return FC
     
@@ -148,6 +231,38 @@ function Demand(M::Float64,m::Float64,ρ::Float64,N::Int,d::Float64)
     end
 
     return D, Tran
+    
+end
+
+function Demand(M::Number,m::Number,ρ::Number,N::Int,d::Number)
+    
+    """METHOD: NON FLOAT
+    Create the Demand Grid and the
+    Markov Transition Matrix of the
+    Demand Shock
+
+    Parameters
+    ----------
+    M: Maximum Demand Shock
+    m: Minimum Demand Shock 
+    ρ: Autocorrelation
+    N: Number of Demand Shocks
+    d: Standard Deviation from the Mean to the Max/Min
+    
+    Output
+    ----------
+    D   : Grid with Demand Shock Realizations
+    Tran: Transition Matrix for the Markov Process of the Demand Shock 
+    """
+    
+    M=float(M);
+    m=float(m);
+    ρ=float(ρ);
+    d=float(d);
+    
+    D=Demand(M,m,ρ,N,d);
+    
+    return D
     
 end
 
@@ -376,41 +491,7 @@ function eFeas(G::Int64,N::Int64)
     
 end
 
-function fFeas(G::Int64,N::Int64)
-    
-    """Creates a Function which is used to create all
-    possible combination of portfolios, given a 
-    maximum number of workers for each G years of tenure.
-    This Function is used to create all possible portfolios 
-    in an economy, and the portfolios a portfolio can change 
-    to due to a Quit and Retirement shocks.
-
-    Parameters
-    ----------
-    G    : Number of Tenure Groups
-    N    : Max Number of Workers Always available for first year of tenure
-    
-    Output
-    ----------
-    Feasf: Function that can Evaluate all Possible Portfolios
-    
-    Function Arguments
-    ----------
-    L_i  : Vector with the Maximum Number of Workers for each Tenure Group
-
-    """
-    
-    Feasf=eFeas(G,N);
-    
-    Feasf=:(L_i->collect(($Feasf)));
-    
-    Feasf= @eval $Feasf;
-    
-    return Feasf
-    
-end
-
-function FeasibleChoices(f::Function,L::Array{Any,1})
+function FeasibleChoices(L::Array{Any,1})
     
     """Returns the Array with the 
     Index Value of all Feasible future
@@ -418,75 +499,51 @@ function FeasibleChoices(f::Function,L::Array{Any,1})
 
     Parameters
     ----------
-    f : Function used to create Feasible Portfolios
     L : Labour Portfolios
     
-    Parameters
+    Output
     ----------
     R : Array of Indexes of Today Portfolio by the Number of Feasible Portfolios
     C : List with all Feasible Portfolio indexes for each Portfolio
     """
     
-    C=Array(Array{Int64,1},length(L))
+    L2=zeros(Int64,length(L)*(length(L[1])-1));
     
-    for i=1:length(L)
-
-        L_i=L[i];
+    TomorrowL!(L2,L);
     
-        FeasL=f(L_i);
-    
-        C[i]=findin(L,FeasL);
-        
-    end
+    C=FeasLoop(L,L2);         # 1707/1719 = 99%
     
     R=deepcopy(C);
     
-    for i=1:length(L)
-        
-        fill!(R[i],i);
-        
-    end
+    Rows!(R);
 
     return R,C
     
 end
 
-function FeasibleQnR(f::Function,L::Array{Any,1})
+function FeasibleQnR(L::Array{Any,1})
     
     """Returns the Array with the 
-    Index Value of all Feasible future
-    Portfolios by Quits and Retirements.
+    Index Value of all Possible future
+    QnR for Labour Portfolio i.
 
     Parameters
     ----------
-    f : Function used to create Feasible Portfolios
     L : Labour Portfolios
     
-    Parameters
+    Output
     ----------
-    R : Array of Indexes of Today Portfolio by the Number of Possible Portfolios
-    C : Array of Indexes of Possible Portfolios for tomorrow due to QnR
+    R : Array of Indexes of Today Portfolio by the Number of Feasible Portfolios
+    C : List with all Feasible Portfolio indexes for each Portfolio
     """
     
-    C=Array(Array{Int64,1},length(L))
+    L2=[L...];
     
-    for i=1:length(L)
-
-        L_i=L[i];
-    
-        FeasL=f(L_i);
-    
-        C[i]=findin(L,FeasL);
-        
-    end
+    C=PossLoop(L,L2);   
     
     R=deepcopy(C);
     
-    for i=1:length(L)
-        
-        fill!(R[i],i);
-        
-    end
+    Rows!(R);
 
     return R,C
     
@@ -539,6 +596,33 @@ function QnRTransition(L::Array{Any,1},F::(Array{Array{Int64,1},1},Array{Array{I
     
 end
 
+function QnRTransition(L::Array{Any,1},F::(Array{Array{Int64,1},1},Array{Array{Int64,1},1}),δ::Number,γ::Number)
+    
+    """METHOD: NON FLOAT
+    Returns a Transition Matrix 
+    for shocks in Quit and Retirment
+
+    Parameters
+    ----------
+    L : Labour Portfolios
+    F : List of indexes of all Feasible QnR Shocks
+    δ : Probability of a worker Quiting in the last tenure group
+    γ : Probability of a worker Retiring in all but the last tenure group
+    
+    Parameters
+    ----------
+    Π : Transition Matrix of Quit and Retirment
+    """
+    
+    δ=float(δ);
+    γ=float(γ);
+    
+    Π=QnRTransition(L,F,δ,γ);
+    
+    return Π
+    
+end
+
 function Profits(L::Array{Any,1},D::Array{Float64,1},W::Array{Float64,1},F::Array{Float64,1},FC::Array{Float64,1},M::(Array{Array{Int64,1},1},Array{Array{Int64,1},1}))
     
     """Creates a Sparse Matrix with all 
@@ -559,6 +643,7 @@ function Profits(L::Array{Any,1},D::Array{Float64,1},W::Array{Float64,1},F::Arra
     P : Matrix with Profits for each State
     """
     
+    G=length(L[1]);
     P=similar(M[1],Array{Float64,2});
     
     for i=1:length(L)
@@ -573,15 +658,36 @@ function Profits(L::Array{Any,1},D::Array{Float64,1},W::Array{Float64,1},F::Arra
     Fl=[map(x->x'*F,L)...];
     Wl=[map(x->x'*W,L)...];
     
-    f=similar(D);
-    w=similar(D);
-    fc=similar(D);
+    k=0;
+    j=1;
     
     for (i,x) in enumerate(P0)
         
-        Fcl=(vcat(0,L[x][1:end-1])-L[P1[i]])'*FC;
+        Fcl=0.;
         
-        P[x][:,sum(P0[1:i].==x)]=min(D,fill!(f,Fl[P1[i]]))-fill!(w,Wl[P1[i]])-fill!(fc,Fcl[1]);
+        for g=2:G
+            
+            Fcl+=FC[g]*(L[x][g-1]-L[P1[i]][g]);
+            
+        end
+        
+        if x>k
+            
+            j=1;
+            
+        else
+            
+            j+=1;
+            
+        end
+        
+        for d=1:length(D)
+            
+            P[x][d,j]=min(D[d],Fl[P1[i]])-Wl[P1[i]]-Fcl;
+            
+        end
+        
+        k=x;
         
     end
     
@@ -622,7 +728,7 @@ function VFI(β::Float64,P::Array{Array{Float64,2},1},D::Array{Float64,2},Q::Spa
         
         for i=1:S_L, j=1:S_D
             
-            V[j,i]=max(P[i][j,:]+Vt[j,M[i]]...);
+            V[j,i]=maximum(P[i][j,:]+Vt[j,M[i]]);
             
         end
         
@@ -641,6 +747,209 @@ function VFI(β::Float64,P::Array{Array{Float64,2},1},D::Array{Float64,2},Q::Spa
     end
     
     return V, G
+    
+end
+
+function ErrorCheck(x;β=0.9,N=3,G=3,α₁=0.0,β₁=0.0,Ĝ=2,ϕ=0.0,S=true,δ=0.5,γ=0.5,M_D=10.0,m_D=5.0,ρ=0.0,N_D=2,d=3.0)
+    
+    """Create the Wage Structure of an Economy.
+
+    Parameters
+    ----------
+    β  : Firm's intertemporal discount rate
+    G  : Number of different heterogenous tenure workes  
+    N  : Max Number of Workers hired during one period
+    α₁ : Entry level wage  
+    β₁ : Period Wage Increase with tenure 
+    Ĝ  : Tenure for Peaked Production
+    ϕ  : Percentage of Wage Paid as Firing Cost 
+    S  : Boolean for Tenure increase in Firing Cost
+    δ  : Probability of a worker Quiting in the last tenure group  
+    γ  : Probability of a worker Retiring in all but the last tenure group  
+    M_D: Maximum Demand Shock 
+    m_D: Minimum Demand Shock 
+    ρ  : Autocorrelation of Demand Shock  
+    N_D: Number of Demand Shocks  
+    d  : Standard Deviation from the Mean to the Max/Min 
+    
+    Parameters
+    ----------
+    Error : Error Message
+    """
+    
+    0<β<1           || error("\u03B2 \u2209 (0,1)");                              # Check if β is between 0 and 1
+    
+    isa(N,Int)      || error("N is not and Interger");                            # Check if N is an Interger
+    isa(G,Int)      || error("G is not and Interger");                            # Check if G is an Interger
+    N>0             || error("N \u226F 0");                                       # Check if N is greater than zero  
+    G>0             || error("G \u226F 0");                                       # Check if G is greater than zero
+    
+    α₁>=0           || error("Starting Wage is Negative");                        # Check if Wages are negative
+    α₁+(β₁*(G-1))>=0|| error("Slope of Wage Function creates Negative Wages");    # Check if Wages are negative
+    
+    isa(Ĝ,Int)      || error("G\u0302 is not an Interger");                       # Check if Ĝ is an Interger
+    1<Ĝ<G           || error("G\u0302 \u2209 (0,G)");                             # Check if Ĝ is a Valid Tenure Year
+    
+    ϕ>=0            || error("Firing Cost must not be negative");                 # Check if ϕ>0
+    isa(S,Bool)     || error("Seniority (S) is not Boolean");                     # Check S is Boolean
+    
+    0<=δ<=1         || error("\u03B4 \u2209 [0,1]");                              # Check if δ is between 0 and 1
+    0<=γ<=1         || error("\u03B3 \u2209 [0,1]");                              # Check if γ is between 0 and 1
+    
+    -1<ρ<1          || error("\u03C1 \u2209 (-1,1) No Unit Root Allowed");        # Check if ρ has a Unit Root
+    M_D>m_D         || error("Maximum Demand is not larger than Minimum Demand"); # Check of M_D>m_D
+    m_D>0           || error("Minimum Demand must be Positive");                  # Check of M_D>m_D
+    N_D>1           || error("Number of Demand Shocks must be larger than 1");    # Check if N_D>1
+    isa(N_D,Int)    || error("Number of Demand Grid is not an Interger");         # Check N_D is Interger
+    d>0             || error("Standard Deviation of Max is not Positive");        # Check if d>0
+    
+end
+
+######################################################################################################################################
+############################################### SUB FUNCTIONS ########################################################################
+######################################################################################################################################
+
+function TomorrowL!(L2::Array{Int64,1},L::Array{Any,1})
+    
+    """Create a vector with all Possible Portfolios
+    workers, but avoiding the first Generation 
+    Number of Workers
+
+    Parameters
+    ----------
+    L2 : Vector to be filled with the number of workers
+    L  : Labour Portfolios
+    
+    Output
+    ----------
+    L2 : Vector filled with number of workers
+    """
+    
+    G=length(L[1])-1;
+    
+    j=0;
+    
+    for i=1:length(L)
+        
+        for g=2:length(L[1])
+            
+            j+=1;
+            L2[j]=L[i][g];
+            
+        end
+        
+    end
+    
+end
+
+function LiLarge!(Li::BitArray{1},L1::Array{Int64,1},L2::Array{Int64,1})
+    
+    """Return a boolean vector saying if the change of
+    portfolio is feasible (ie if tomorrow number of
+    workers is larger than todays
+
+    Parameters
+    ----------
+    Li : Ready Boolean Vector
+    L1 : Todays Labour Portfolio
+    L2 : Vector with all possible portfolios
+    
+    Output
+    ----------
+    Li : Filled Boolean Vector
+    """
+    
+    for i=1:length(Li)
+        
+        Li[i]=L1[rem(i-1,length(L1))+1]>=L2[i];
+        
+    end
+    
+end
+
+function FeasLoop(L::Array{Any,1},L2::Array{Int64,1})
+    
+    """Find the indexes of the Feasible Portfolios
+    for each current Portfolio
+
+    Parameters
+    ----------
+    L : Labour Portfolio
+    L2 : Vector with all possible portfolios
+    
+    Output
+    ----------
+    C : List with all Feasible Portfolio indexes for each Portfolio
+    """
+    
+    C=Array(Array{Int64,1},length(L));
+    
+    Li=BitArray(length(L2));
+    
+    for i=1:length(L)
+        
+        LiLarge!(Li,vcat(L[i][1:end-2],sum(L[i][end-1:end])),L2);
+        
+        C[i]=find(prod(reshape(Li,length(L[1])-1,length(L)),1))
+        
+    end
+    
+    return C
+    
+end
+
+function PossLoop(L::Array{Any,1},L2::Array{Int64,1})
+    
+    """Find the indexes of the Possible Portfolio QnR
+    for each current Portfolio
+
+    Parameters
+    ----------
+    L : Labour Portfolio
+    L2 : Vector with all possible portfolios
+    
+    Output
+    ----------
+    C : List with all Feasible Portfolio indexes for each Portfolio
+    """
+    
+    C=Array(Array{Int64,1},length(L));
+    
+    Li=BitArray(length(L2));
+    
+    for i=1:length(L)
+        
+        LiLarge!(Li,L[i],L2);   
+        
+        C[i]=find(prod(reshape(Li,length(L[1]),length(L)),1))       
+        
+    end
+    
+    return C
+    
+end
+
+function Rows!(R::Array{Array{Int64,1},1})
+    
+    """Give the Indexes for Todays Portfolio
+    for each feasible Portfolio Change. It does
+    it by filling the Feasible portfolio Matrix
+    with its coloumn value
+
+    Parameters
+    ----------
+    R : Empty Array of Indexes of Today Portfolio by the Number of Feasible Portfolios
+    
+    Output
+    ----------
+    R : Array of Indexes of Today Portfolio by the Number of Feasible Portfolios
+    """
+    
+    for i=1:length(R)
+        
+        fill!(R[i],i);                     
+        
+    end
     
 end
 

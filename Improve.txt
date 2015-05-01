@@ -1,0 +1,19 @@
+* Improve Feasible Choices
+- For G=6
+- Matlab  does both in 5 secs
+- Julia does EACH in 45 secs
+- Check the use of repmat as an option
+
+* Improve Profits
+- For G=6
+- Matalb fills many values in 46 secs
+- Julia fills only profits in 80 secs
+
+* Improve VFI
+- For G=6
+- Matlab does VFI in 965 secs
+- Julia does VFI in in 525 secs
+- Need to check if it actually is faster or Eps is smaller
+
+* Improve Structures
+- Make sure the change of types is kept to a minimal

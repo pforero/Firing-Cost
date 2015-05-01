@@ -1,5 +1,6 @@
-3. Network Graphs(Feas and OptPol)
-5. Improve Structures
-7. Description of Model
-9. Condition Display (ie choose if to display or not)
-10. Methods for Intergers instead of Float
+1. Network Graphs(Feas and OptPol)
+4. Different Production Function
+5. Different Utility Function
+6. Simpler Labour Portfolio Function
+7. Parallelize Profits
+8. Paralleliza VFI
